@@ -89,21 +89,13 @@ class PPEDetector:
         """OpenCV BGR 이미지 → 통합 결과"""
         all_boxes = []
 
-        # 1) 장갑 모듈은 손 박스 수집용으로만 실행 (mask/helmet 오탐 필터에 사용).
-        #    장갑 분류 결과 자체는 현재 웹캠 환경에서 신뢰도가 낮아 출력에서 제외.
-        hand_boxes = []
-        if self.gloves is not None:
-            glove_boxes = self.gloves.classify(img_bgr)
-            for b in glove_boxes:
-                hand_boxes.append((b["x1"], b["y1"], b["x2"], b["y2"]))
-
-        # 2) 헬멧: 손 박스와 겹치는 것은 오탐으로 거부
+        # 장갑 결과는 웹캠 환경에서 신뢰도가 낮아 출력·필터 모두 제외.
+        # HandLandmarker 추론 비용이 크므로 스킵해 프레임당 처리 속도를 높임.
         if self.helmet is not None:
-            all_boxes.extend(self.helmet.detect(img_bgr, hand_boxes=hand_boxes))
+            all_boxes.extend(self.helmet.detect(img_bgr, hand_boxes=[]))
 
-        # 3) 마스크 (손과 겹치는 얼굴 박스는 손바닥 오탐으로 거부)
         if self.mask is not None:
-            all_boxes.extend(self.mask.classify(img_bgr, hand_boxes=hand_boxes))
+            all_boxes.extend(self.mask.classify(img_bgr, hand_boxes=[]))
 
         detected = {}
         confidences = {}
